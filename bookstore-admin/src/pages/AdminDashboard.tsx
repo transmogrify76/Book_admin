@@ -47,17 +47,17 @@ const AdminDashboard: React.FC = () => {
     { id: 'O003', customer: 'Amit Singh', total: 659, status: 'Delivered', items: 2, date: '2024-03-13' },
   ]);
 
-  const [customers,] = useState([
+  const customers = [
     { id: 'C001', name: 'Rahul Sharma', email: 'rahul@example.com', orders: 5, joined: '2023-01-15' },
     { id: 'C002', name: 'Priya Patel', email: 'priya@example.com', orders: 2, joined: '2023-02-20' },
     { id: 'C003', name: 'Amit Singh', email: 'amit@example.com', orders: 8, joined: '2022-12-05' },
-  ]);
+  ];
 
-  const [reviews, ] = useState([
+  const reviews = [
     { id: 'R001', book: 'The Alchemist', rating: 4.5, comment: 'Life-changing read!', author: 'Neha Gupta', date: '2024-03-10' },
     { id: 'R002', book: '1984', rating: 5, comment: 'Timeless classic', author: 'Ravi Desai', date: '2024-03-12' },
     { id: 'R003', book: 'Wings of Fire', rating: 4, comment: 'Inspiring autobiography', author: 'Sonia Mehta', date: '2024-03-14' },
-  ]);
+  ];
 
   const stats = [
     { label: 'Monthly Revenue', value: '₹1,84,420', icon: FaRupeeSign, color: 'bg-green-100' },
@@ -180,11 +180,9 @@ const AdminDashboard: React.FC = () => {
                 <input
                   type="date"
                   className="border rounded-lg px-3 py-2"
-                  onChange={(e) => {/* Implement date filter */}}
                 />
                 <select 
                   className="border rounded-lg px-3 py-2"
-                  onChange={(e) => {/* Implement status filter */}}
                 >
                   <option>All Statuses</option>
                   <option>Processing</option>

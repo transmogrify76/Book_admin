@@ -13,7 +13,7 @@ const App: React.FC = () => {
       <Route path="/signup" element={<AdminSignup />} />
       <Route path="/login" element={<AdminLogin />} />
       <Route
-        path="/dashboard"
+        path="/dashboard-admin"
         element={
           isAuthenticated ? <AdminDashboard /> : <Navigate to="/login" replace />
         }
