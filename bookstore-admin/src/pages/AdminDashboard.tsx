@@ -34,7 +34,7 @@ const AdminDashboard: React.FC = () => {
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-  // Sample Data
+  
   const [books, setBooks] = useState([
     { id: 'B001', title: 'The Midnight Library', author: 'Matt Haig', price: 499, stock: 12 },
     { id: 'B002', title: 'Atomic Habits', author: 'James Clear', price: 399, stock: 23 },

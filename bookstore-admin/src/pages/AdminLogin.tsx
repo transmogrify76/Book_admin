@@ -12,9 +12,8 @@ const AdminLogin: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: API login
     localStorage.setItem('adminToken', 'dummy');
-    navigate('/dashboard');
+    navigate('/dashboard-admin');
   };
 
   return (

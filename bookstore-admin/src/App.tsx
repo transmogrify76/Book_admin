@@ -20,7 +20,7 @@ const App: React.FC = () => {
       />
       <Route
         path="*"
-        element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
+        element={<Navigate to={isAuthenticated ? '/dashboard-admin' : '/login'} replace />}
       />
     </Routes>
   );
