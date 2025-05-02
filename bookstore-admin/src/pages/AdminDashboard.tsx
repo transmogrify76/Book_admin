@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FaChartLine,
@@ -14,8 +14,48 @@ import {
   FaEdit,
   FaTrash,
   FaSearch,
+  FaFilePdf,
+  FaImage
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+
+interface Book {
+  _id: string;
+  title: string;
+  author: string;
+  price: number;
+  stock: number;
+  category_name: string;
+  subcategory_name: string;
+  file_url: string;
+  picture_url: string;
+}
+
+interface Order {
+  id: string;
+  customer: string;
+  total: number;
+  status: string;
+  items: number;
+  date: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  orders: number;
+  joined: string;
+}
+
+interface Review {
+  id: string;
+  book: string;
+  rating: number;
+  comment: string;
+  author: string;
+  date: string;
+}
 
 const navigation = [
   { name: 'Dashboard', icon: FaChartLine },
@@ -33,31 +73,69 @@ const AdminDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddBookModal, setShowAddBookModal] = useState(false);
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [books, setBooks] = useState([
-    { id: 'B001', title: 'The Midnight Library', author: 'Matt Haig', price: 499, stock: 12 },
-    { id: 'B002', title: 'Atomic Habits', author: 'James Clear', price: 399, stock: 23 },
-    { id: 'B003', title: 'Ikigai', author: 'Héctor García', price: 299, stock: 7 },
-  ]);
+  // Fetch books data from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch('http://localhost:5400/api/booksops/getallbookdata');
+        if (!response.ok) {
+          throw new Error('Failed to fetch books');
+        }
+        const data = await response.json();
+        setBooks(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load books');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [orders, setOrders] = useState([
+    if (activeTab === 'Inventory') {
+      fetchBooks();
+    }
+  }, [activeTab]);
+
+  const handleDeleteBook = async (bookId: string) => {
+    try {
+      const response = await fetch(`/api/books/${bookId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete book');
+      }
+
+      setBooks(books.filter(book => book._id !== bookId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
+  const [orders, setOrders] = useState<Order[]>([ // Add setOrders here
     { id: 'O001', customer: 'Rahul Sharma', total: 899, status: 'Processing', items: 3, date: '2024-03-15' },
     { id: 'O002', customer: 'Priya Patel', total: 1499, status: 'Shipped', items: 5, date: '2024-03-14' },
     { id: 'O003', customer: 'Amit Singh', total: 659, status: 'Delivered', items: 2, date: '2024-03-13' },
   ]);
 
-  const customers = [
+  const [customers] = useState<Customer[]>([
     { id: 'C001', name: 'Rahul Sharma', email: 'rahul@example.com', orders: 5, joined: '2023-01-15' },
     { id: 'C002', name: 'Priya Patel', email: 'priya@example.com', orders: 2, joined: '2023-02-20' },
     { id: 'C003', name: 'Amit Singh', email: 'amit@example.com', orders: 8, joined: '2022-12-05' },
-  ];
+  ]);
 
-  const reviews = [
+  const [reviews] = useState<Review[]>([
     { id: 'R001', book: 'The Alchemist', rating: 4.5, comment: 'Life-changing read!', author: 'Neha Gupta', date: '2024-03-10' },
     { id: 'R002', book: '1984', rating: 5, comment: 'Timeless classic', author: 'Ravi Desai', date: '2024-03-12' },
     { id: 'R003', book: 'Wings of Fire', rating: 4, comment: 'Inspiring autobiography', author: 'Sonia Mehta', date: '2024-03-14' },
-  ];
+  ]);
 
   const stats = [
     { label: 'Monthly Revenue', value: '₹1,84,420', icon: FaRupeeSign, color: 'bg-green-100' },
@@ -65,10 +143,6 @@ const AdminDashboard: React.FC = () => {
     { label: 'Low Stock Books', value: books.filter(b => b.stock < 10).length, icon: FaBook, color: 'bg-red-100' },
     { label: 'New Reviews', value: reviews.length, icon: FaCommentDots, color: 'bg-blue-100' },
   ];
-
-  const handleDeleteBook = (bookId: string) => {
-    setBooks(books.filter(book => book.id !== bookId));
-  };
 
   const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
     setOrders(orders.map(order => 
@@ -186,49 +260,82 @@ const AdminDashboard: React.FC = () => {
                     <FaPlus className="w-4 h-4 mr-2" /> Add Book
                   </button>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50/80">
-                      <tr>
-                        {['Title', 'Author', 'Price', 'Stock', 'Actions'].map((header, idx) => (
-                          <th
-                            key={idx}
-                            className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200/50">
-                      {books.map(book => (
-                        <tr key={book.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{book.title}</td>
-                          <td className="px-5 py-4 text-sm text-gray-600">{book.author}</td>
-                          <td className="px-5 py-4 text-sm text-gray-600">₹{book.price}</td>
-                          <td className={`px-5 py-4 text-sm font-medium ${
-                            book.stock < 10 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                            {book.stock}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-3">
-                              <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
-                                <FaEdit className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteBook(book.id)}
-                                className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50"
-                              >
-                                <FaTrash className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
+                
+                {isLoading ? (
+                  <div className="p-6 text-center text-gray-500">Loading books...</div>
+                ) : error ? (
+                  <div className="p-6 text-red-600">{error}</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50/80">
+                        <tr>
+                          {['Title', 'Author', 'Category', 'Subcategory', 'Price', 'Stock', 'Files', 'Actions'].map((header, idx) => (
+                            <th
+                              key={idx}
+                              className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            >
+                              {header}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200/50">
+                        {books.map(book => (
+                          <tr key={book._id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-5 py-4 text-sm font-medium text-gray-900">{book.title}</td>
+                            <td className="px-5 py-4 text-sm text-gray-600">{book.author}</td>
+                            <td className="px-5 py-4 text-sm text-gray-600">{book.category_name}</td>
+                            <td className="px-5 py-4 text-sm text-gray-600">{book.subcategory_name}</td>
+                            <td className="px-5 py-4 text-sm text-gray-600">₹{book.price}</td>
+                            <td className={`px-5 py-4 text-sm font-medium ${
+                              book.stock < 10 ? 'text-red-600' : 'text-gray-600'
+                            }`}>
+                              {book.stock}
+                            </td>
+                            <td className="px-5 py-4 text-sm text-gray-600">
+                              <div className="flex items-center space-x-2">
+                                {book.file_url && (
+                                  <a 
+                                    href={book.file_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-600 hover:text-indigo-800"
+                                  >
+                                    <FaFilePdf className="w-4 h-4" />
+                                  </a>
+                                )}
+                                {book.picture_url && (
+                                  <a 
+                                    href={book.picture_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-amber-600 hover:text-amber-800"
+                                  >
+                                    <FaImage className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-sm text-gray-600">
+                              <div className="flex items-center space-x-3">
+                                <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
+                                  <FaEdit className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteBook(book._id)}
+                                  className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50"
+                                >
+                                  <FaTrash className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
