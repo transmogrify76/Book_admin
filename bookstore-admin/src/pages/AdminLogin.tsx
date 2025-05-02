@@ -4,16 +4,50 @@ import { useNavigate } from 'react-router-dom';
 
 const AdminLogin: React.FC = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('adminToken', 'dummy');
-    navigate('/dashboard-admin');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5400/api/userauth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Check if user is admin
+      if (!data.adminid) {
+        throw new Error('Access restricted to administrators only');
+      }
+
+      // Store JWT token
+      localStorage.setItem('adminToken', data.token);
+      navigate('/dashboard-admin');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -30,7 +64,14 @@ const AdminLogin: React.FC = () => {
         >
           Admin Log In
         </motion.h2>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          
           {['email', 'password'].map((field) => (
             <div key={field}>
               <label className="block text-gray-700 mb-1 capitalize">{field}</label>
@@ -44,13 +85,18 @@ const AdminLogin: React.FC = () => {
               />
             </div>
           ))}
+          
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-md transition"
+            disabled={isLoading}
+            className={`w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg transition ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'
+            }`}
           >
-            Log In
+            {isLoading ? 'Authenticating...' : 'Log In'}
           </button>
         </form>
+
         <p className="mt-4 text-sm text-center text-gray-600">
           Don’t have an account?{' '}
           <span

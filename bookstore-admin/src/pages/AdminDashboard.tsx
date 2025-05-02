@@ -13,6 +13,7 @@ import {
   FaPlus,
   FaEdit,
   FaTrash,
+  FaSearch,
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,7 +35,6 @@ const AdminDashboard: React.FC = () => {
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-  
   const [books, setBooks] = useState([
     { id: 'B001', title: 'The Midnight Library', author: 'Matt Haig', price: 499, stock: 12 },
     { id: 'B002', title: 'Atomic Habits', author: 'James Clear', price: 399, stock: 23 },
@@ -76,255 +76,30 @@ const AdminDashboard: React.FC = () => {
     ));
   };
 
-  const renderContent = () => {
-    switch(activeTab) {
-      case 'Dashboard':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {stats.map((stat, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * idx }}
-                  className={`${stat.color} rounded-xl p-4 shadow-sm`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{stat.label}</p>
-                      <p className="mt-2 text-2xl font-bold text-gray-900">{stat.value}</p>
-                    </div>
-                    <stat.icon className="text-2xl opacity-75" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
-                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                  Sales Chart Placeholder
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h3 className="text-lg font-semibold mb-4">Order Status</h3>
-                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                  Pie Chart Placeholder
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'Inventory':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">Book Inventory</h2>
-              <button 
-                onClick={() => setShowAddBookModal(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center"
-              >
-                <FaPlus className="mr-2" /> Add Book
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm">Title</th>
-                    <th className="px-4 py-3 text-left text-sm">Author</th>
-                    <th className="px-4 py-3 text-sm">Price</th>
-                    <th className="px-4 py-3 text-sm">Stock</th>
-                    <th className="px-4 py-3 text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {books.map(book => (
-                    <tr key={book.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3">{book.title}</td>
-                      <td className="px-4 py-3">{book.author}</td>
-                      <td className="px-4 py-3 text-center">₹{book.price}</td>
-                      <td className={`px-4 py-3 text-center ${
-                        book.stock < 10 ? 'text-red-600 font-bold' : ''
-                      }`}>
-                        {book.stock}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button className="text-indigo-600 hover:text-indigo-800 mr-3">
-                          <FaEdit />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteBook(book.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
-      case 'Orders':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">Order Management</h2>
-              <div className="flex gap-4">
-                <input
-                  type="date"
-                  className="border rounded-lg px-3 py-2"
-                />
-                <select 
-                  className="border rounded-lg px-3 py-2"
-                >
-                  <option>All Statuses</option>
-                  <option>Processing</option>
-                  <option>Shipped</option>
-                  <option>Delivered</option>
-                </select>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-sm">Order ID</th>
-                    <th className="px-4 py-3 text-sm">Customer</th>
-                    <th className="px-4 py-3 text-sm">Date</th>
-                    <th className="px-4 py-3 text-sm">Total</th>
-                    <th className="px-4 py-3 text-sm">Status</th>
-                    <th className="px-4 py-3 text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map(order => (
-                    <tr key={order.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3 text-center">{order.id}</td>
-                      <td className="px-4 py-3">{order.customer}</td>
-                      <td className="px-4 py-3 text-center">{order.date}</td>
-                      <td className="px-4 py-3 text-center">₹{order.total}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                          order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
-                          'bg-amber-100 text-amber-800'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowEditOrderModal(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-800"
-                        >
-                          <FaEdit />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
-      case 'Customers':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="text-2xl font-semibold mb-6">Customer Database</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-sm">Name</th>
-                    <th className="px-4 py-3 text-sm">Email</th>
-                    <th className="px-4 py-3 text-sm">Total Orders</th>
-                    <th className="px-4 py-3 text-sm">Joined</th>
-                    <th className="px-4 py-3 text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map(customer => (
-                    <tr key={customer.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3">{customer.name}</td>
-                      <td className="px-4 py-3">{customer.email}</td>
-                      <td className="px-4 py-3 text-center">{customer.orders}</td>
-                      <td className="px-4 py-3 text-center">{customer.joined}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button className="text-indigo-600 hover:text-indigo-800">
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
-      case 'Reviews':
-        return (
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="text-2xl font-semibold mb-6">Customer Reviews</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {reviews.map(review => (
-                <div key={review.id} className="border rounded-lg p-4 hover:shadow-md">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <span className="text-amber-500">
-                        {'★'.repeat(review.rating)}
-                      </span>
-                      <span className="text-gray-400 ml-1">
-                        {'★'.repeat(5 - review.rating)}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500">{review.date}</span>
-                  </div>
-                  <p className="text-gray-800 mb-2">"{review.comment}"</p>
-                  <p className="text-sm text-gray-600">
-                    {review.author} - {review.book}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      default:
-        return <div className="text-xl font-semibold">Select a category</div>;
-    }
-  };
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50/95">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r shadow-lg">
-        <div className="p-6 text-2xl font-bold text-indigo-600">BookVerse Admin</div>
-        <nav className="mt-6 space-y-1">
+      <aside className="w-64 bg-white/90 backdrop-blur-lg border-r border-gray-200/75 shadow-xl">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            BookVerse Admin
+          </h1>
+        </div>
+        <nav className="mt-4 px-3 space-y-1">
           {navigation.map((item) => (
-            <button
+            <motion.button
               key={item.name}
+              whileHover={{ scale: 1.02 }}
               onClick={() => setActiveTab(item.name)}
-              className={`w-full flex items-center px-6 py-3 text-gray-600 transition-all ${
+              className={`w-full flex items-center px-4 py-3.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === item.name
-                  ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600'
-                  : 'hover:bg-gray-50 hover:border-l-4 hover:border-gray-200'
+                  ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 shadow-sm border border-indigo-100'
+                  : 'text-gray-600 hover:bg-gray-50/80 hover:shadow'
               }`}
             >
-              <item.icon className="h-5 w-5 mr-3" />
+              <item.icon className={`h-5 w-5 mr-3 ${activeTab === item.name ? 'text-indigo-500' : 'text-gray-400'}`} />
               {item.name}
-            </button>
+            </motion.button>
           ))}
         </nav>
       </aside>
@@ -332,12 +107,13 @@ const AdminDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between bg-white p-4 border-b">
-          <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2 w-96">
+        <header className="flex items-center justify-between bg-white/90 backdrop-blur-lg px-6 py-4 border-b border-gray-200/75">
+          <div className="flex items-center bg-gray-50/80 rounded-xl px-4 py-2.5 w-96 shadow-inner">
+            <FaSearch className="w-5 h-5 text-gray-400 mr-3" />
             <input
               type="text"
-              placeholder="Search books, orders, customers..."
-              className="bg-transparent outline-none w-full"
+              placeholder="Search anything..."
+              className="bg-transparent outline-none w-full placeholder-gray-400 text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -347,59 +123,355 @@ const AdminDashboard: React.FC = () => {
               localStorage.removeItem('adminToken');
               navigate('/login');
             }}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="flex items-center px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors"
           >
             <FaSignOutAlt className="mr-2" /> Sign Out
           </button>
         </header>
 
         {/* Main Content Area */}
-        <main className="p-6 overflow-auto">
+        <main className="flex-1 p-6 overflow-auto bg-gray-50/50">
           <div className="space-y-6">
-            {renderContent()}
+            {/* Dashboard Tab */}
+            {activeTab === 'Dashboard' && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {stats.map((stat, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * idx }}
+                      className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-gray-200/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{stat.label}</p>
+                          <p className="mt-2 text-2xl font-semibold text-gray-900">{stat.value}</p>
+                        </div>
+                        <div className={`p-3 rounded-lg ${stat.color} shadow-inner`}>
+                          <stat.icon className="text-lg text-gray-700" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-gray-200/50">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Overview</h3>
+                    <div className="h-64 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl flex items-center justify-center text-gray-400">
+                      Sales Chart Placeholder
+                    </div>
+                  </div>
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-gray-200/50">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Status</h3>
+                    <div className="h-64 bg-gradient-to-br from-amber-50 to-rose-50 rounded-xl flex items-center justify-center text-gray-400">
+                      Pie Chart Placeholder
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Inventory Tab */}
+            {activeTab === 'Inventory' && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+                <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Book Inventory</h2>
+                  <button 
+                    onClick={() => setShowAddBookModal(true)}
+                    className="flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    <FaPlus className="w-4 h-4 mr-2" /> Add Book
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50/80">
+                      <tr>
+                        {['Title', 'Author', 'Price', 'Stock', 'Actions'].map((header, idx) => (
+                          <th
+                            key={idx}
+                            className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200/50">
+                      {books.map(book => (
+                        <tr key={book.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{book.title}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{book.author}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">₹{book.price}</td>
+                          <td className={`px-5 py-4 text-sm font-medium ${
+                            book.stock < 10 ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {book.stock}
+                          </td>
+                          <td className="px-5 py-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-3">
+                              <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
+                                <FaEdit className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteBook(book.id)}
+                                className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50"
+                              >
+                                <FaTrash className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Orders Tab */}
+            {activeTab === 'Orders' && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+                <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Order Management</h2>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="date"
+                      className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    />
+                    <select 
+                      className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    >
+                      <option>All Statuses</option>
+                      <option>Processing</option>
+                      <option>Shipped</option>
+                      <option>Delivered</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50/80">
+                      <tr>
+                        {['Order ID', 'Customer', 'Date', 'Total', 'Status', 'Actions'].map((header, idx) => (
+                          <th
+                            key={idx}
+                            className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200/50">
+                      {orders.map(order => (
+                        <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{order.id}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{order.customer}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{order.date}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">₹{order.total}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                              order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-sm text-gray-600">
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowEditOrderModal(true);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50"
+                            >
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Customers Tab */}
+            {activeTab === 'Customers' && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+                <div className="px-6 py-5 border-b border-gray-200/50">
+                  <h2 className="text-lg font-semibold text-gray-900">Customer Database</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50/80">
+                      <tr>
+                        {['Name', 'Email', 'Total Orders', 'Joined', 'Actions'].map((header, idx) => (
+                          <th
+                            key={idx}
+                            className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200/50">
+                      {customers.map(customer => (
+                        <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{customer.name}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{customer.email}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{customer.orders}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{customer.joined}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">
+                            <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Reviews Tab */}
+            {activeTab === 'Reviews' && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+                <div className="px-6 py-5 border-b border-gray-200/50">
+                  <h2 className="text-lg font-semibold text-gray-900">Customer Reviews</h2>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {reviews.map(review => (
+                    <div key={review.id} className="border border-gray-200/50 rounded-xl p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <span className="text-amber-500">
+                            {'★'.repeat(Math.floor(review.rating))}
+                          </span>
+                          <span className="text-gray-300">
+                            {'★'.repeat(5 - Math.floor(review.rating))}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-500">{review.date}</span>
+                      </div>
+                      <p className="text-gray-800 mb-3 text-sm">"{review.comment}"</p>
+                      <p className="text-xs text-gray-500">
+                        {review.author} • {review.book}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Settings Tab */}
+            {activeTab === 'Settings' && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Settings</h2>
+                <div className="space-y-5">
+                  <div className="border-b border-gray-200/50 pb-5">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">General Settings</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Dark Mode</span>
+                        <button className="w-10 h-6 bg-gray-200 rounded-full p-1">
+                          <div className="w-4 h-4 bg-white rounded-full shadow-sm transform translate-x-0" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
 
       {/* Add Book Modal */}
       {showAddBookModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-96">
-            <h3 className="text-xl font-semibold mb-4">Add New Book</h3>
-            {/* Add form fields here */}
-            <div className="flex justify-end gap-4 mt-6">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-200/75"
+          >
+            <h3 className="text-lg font-semibold mb-5">Add New Book</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Book Title</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddBookModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50/80 rounded-xl"
               >
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
+              <button className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors">
                 Save Book
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* Edit Order Modal */}
       {showEditOrderModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-96">
-            <h3 className="text-xl font-semibold mb-4">Edit Order Status</h3>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-200/75"
+          >
+            <h3 className="text-lg font-semibold mb-5">Update Order Status</h3>
             <select
-              className="w-full border rounded-lg p-2 mb-4"
+              className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
               value={selectedOrder.status}
               onChange={(e) => setSelectedOrder({...selectedOrder, status: e.target.value})}
             >
-              <option>Processing</option>
-              <option>Shipped</option>
-              <option>Delivered</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
             </select>
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowEditOrderModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50/80 rounded-xl"
               >
                 Cancel
               </button>
@@ -408,12 +480,12 @@ const AdminDashboard: React.FC = () => {
                   handleUpdateOrderStatus(selectedOrder.id, selectedOrder.status);
                   setShowEditOrderModal(false);
                 }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
                 Update Status
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
