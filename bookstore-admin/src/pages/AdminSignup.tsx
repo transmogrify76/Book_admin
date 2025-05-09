@@ -12,7 +12,6 @@ const AdminSignup: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: API call
     navigate('/login');
   };
 
