@@ -15,11 +15,11 @@ import {
   FaTrash,
   FaSearch,
   FaFilePdf,
-  FaImage
+  FaCheckCircle,
+  FaTimesCircle
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-// Utility function to decode JWT token
 const decodeAdminIdFromToken = (token: string): string | null => {
   try {
     const base64Url = token.split('.')[1];
@@ -41,14 +41,15 @@ interface Book {
   stock: number;
   category_id: string;
   subcategory_id: string;
-  file_url: string;
-  picture_url: string;
   pages: string;
   language: string;
   publisher: string;
   year: string;
   category_name: string;
   subcategory_name: string;
+  approval_status: string;
+  file_base64: string;
+  picture_base64: string;
 }
 
 interface Order {
@@ -68,13 +69,17 @@ interface Customer {
   joined: string;
 }
 
-interface Review {
-  id: string;
-  book: string;
+interface Feedback {
+  _id: string;
+  user_id: string;
   rating: number;
   comment: string;
-  author: string;
-  date: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    name: string;
+    email: string;
+  };
 }
 
 interface Category {
@@ -130,24 +135,15 @@ const AdminDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState('');
-
-  const [customers] = useState<Customer[]>([
-    { id: 'C001', name: 'Rahul Sharma', email: 'rahul@example.com', orders: 5, joined: '2023-01-15' },
-    { id: 'C002', name: 'Priya Patel', email: 'priya@example.com', orders: 2, joined: '2023-02-20' },
-    { id: 'C003', name: 'Amit Singh', email: 'amit@example.com', orders: 8, joined: '2022-12-05' },
-  ]);
-
-  const [reviews] = useState<Review[]>([
-    { id: 'R001', book: 'The Alchemist', rating: 4.5, comment: 'Life-changing read!', author: 'Neha Gupta', date: '2024-03-10' },
-    { id: 'R002', book: '1984', rating: 5, comment: 'Timeless classic', author: 'Ravi Desai', date: '2024-03-12' },
-    { id: 'R003', book: 'Wings of Fire', rating: 4, comment: 'Inspiring autobiography', author: 'Sonia Mehta', date: '2024-03-14' },
-  ]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
 
   const stats = [
     { label: 'Monthly Revenue', value: '₹1,84,420', icon: FaRupeeSign, color: 'bg-green-100' },
     { label: 'Pending Orders', value: orders.filter(o => o.status === 'Processing').length, icon: FaBoxOpen, color: 'bg-amber-100' },
     { label: 'Low Stock Books', value: books.filter(b => b.stock < 10).length, icon: FaBook, color: 'bg-red-100' },
-    { label: 'New Reviews', value: reviews.length, icon: FaCommentDots, color: 'bg-blue-100' },
+    { label: 'Customer Feedback', value: feedbacks.length, icon: FaCommentDots, color: 'bg-blue-100' },
   ];
 
   useEffect(() => {
@@ -160,12 +156,14 @@ const AdminDashboard: React.FC = () => {
         }
 
         const response = await fetch('http://localhost:5400/api/booksops/getallbookdata', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch books');
+        }
         
-        if (!response.ok) throw new Error('Failed to fetch books');
         const data = await response.json();
         setBooks(data);
       } catch (err) {
@@ -189,11 +187,9 @@ const AdminDashboard: React.FC = () => {
           }
 
           const response = await fetch('http://localhost:5400/api/booksops/loadcategories', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          
+
           if (!response.ok) throw new Error('Failed to load categories');
           const data = await response.json();
           setCategories(data);
@@ -218,11 +214,9 @@ const AdminDashboard: React.FC = () => {
           }
 
           const response = await fetch('http://localhost:5400/api/orderops/allorderhistory', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          
+
           if (!response.ok) throw new Error('Failed to fetch orders');
           const data = await response.json();
           setOrders(data);
@@ -233,9 +227,69 @@ const AdminDashboard: React.FC = () => {
         }
       }
     };
-    
+
     fetchOrders();
   }, [activeTab, navigate]);
+
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      if (activeTab === 'Reviews') {
+        try {
+          setFeedbackLoading(true);
+          setFeedbackError('');
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            navigate('/login');
+            return;
+          }
+
+          const response = await fetch('http://localhost:5400/api/feedback/getallfeedback', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (!response.ok) throw new Error('Failed to fetch feedback');
+          const data = await response.json();
+          setFeedbacks(data);
+        } catch (err) {
+          setFeedbackError(err instanceof Error ? err.message : 'Failed to load feedback');
+        } finally {
+          setFeedbackLoading(false);
+        }
+      }
+    };
+
+    fetchFeedbacks();
+  }, [activeTab, navigate]);
+
+  const handleToggleApproval = async (bookId: string) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:5400/api/adminapproval/update?id=${bookId}`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update approval status');
+      }
+
+      const result = await response.json();
+      setBooks(books.map(book => 
+        book._id === bookId ? { ...book, approval_status: result.current_status } : book
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Approval update failed');
+    }
+  };
 
   const handleDeleteBook = async (bookId: string) => {
     try {
@@ -247,9 +301,7 @@ const AdminDashboard: React.FC = () => {
 
       const response = await fetch(`http://localhost:5400/api/books/${bookId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error('Failed to delete book');
@@ -261,7 +313,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleAddBookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const token = localStorage.getItem('adminToken');
     if (!token) {
       setError('Authentication token not found');
@@ -276,7 +328,6 @@ const AdminDashboard: React.FC = () => {
     }
 
     const formData = new FormData();
-    
     formData.append('title', newBook.title);
     formData.append('author', newBook.author);
     formData.append('description', newBook.description);
@@ -297,9 +348,7 @@ const AdminDashboard: React.FC = () => {
       const response = await fetch('http://localhost:5400/api/booksops/uploadbooksdata', {
         method: 'POST',
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!response.ok) {
@@ -308,17 +357,14 @@ const AdminDashboard: React.FC = () => {
       }
 
       const booksResponse = await fetch('http://localhost:5400/api/booksops/getallbookdata', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (!booksResponse.ok) throw new Error('Failed to refresh books');
-      
       const booksData = await booksResponse.json();
       setBooks(booksData);
       setShowAddBookModal(false);
-      
+
       setNewBook({
         title: '',
         author: '',
@@ -349,7 +395,7 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
-      const updatedOrders = orders.map(order => 
+      const updatedOrders = orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       );
       setOrders(updatedOrders);
@@ -467,14 +513,14 @@ const AdminDashboard: React.FC = () => {
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
                 <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">Book Inventory</h2>
-                  <button 
+                  <button
                     onClick={() => setShowAddBookModal(true)}
                     className="flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
                   >
                     <FaPlus className="w-4 h-4 mr-2" /> Add Book
                   </button>
                 </div>
-                
+
                 {isLoading ? (
                   <div className="p-6 text-center text-gray-500">Loading books...</div>
                 ) : error ? (
@@ -484,7 +530,7 @@ const AdminDashboard: React.FC = () => {
                     <table className="w-full">
                       <thead className="bg-gray-50/80">
                         <tr>
-                          {['Title', 'Author', 'Category', 'Subcategory', 'Price', 'Stock', 'Files', 'Actions'].map((header, idx) => (
+                          {['Title', 'Author', 'Category', 'Subcategory', 'Price', 'Stock', 'Approval', 'Files', 'Actions'].map((header, idx) => (
                             <th
                               key={idx}
                               className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -502,41 +548,58 @@ const AdminDashboard: React.FC = () => {
                             <td className="px-5 py-4 text-sm text-gray-600">{book.category_name}</td>
                             <td className="px-5 py-4 text-sm text-gray-600">{book.subcategory_name}</td>
                             <td className="px-5 py-4 text-sm text-gray-600">₹{book.price}</td>
-                            <td className={`px-5 py-4 text-sm font-medium ${
-                              book.stock < 10 ? 'text-red-600' : 'text-gray-600'
-                            }`}>
+                            <td className={`px-5 py-4 text-sm font-medium ${book.stock < 10 ? 'text-red-600' : 'text-gray-600'}`}>
                               {book.stock}
                             </td>
                             <td className="px-5 py-4 text-sm text-gray-600">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                book.approval_status === 'yes' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {book.approval_status === 'yes' ? 'Approved' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-sm text-gray-600">
                               <div className="flex items-center space-x-2">
-                                {book.file_url && (
-                                  <a 
-                                    href={book.file_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                {book.file_base64 && (
+                                  <a
+                                    href={`data:application/pdf;base64,${book.file_base64}`}
+                                    download={`${book.title}.pdf`}
                                     className="text-indigo-600 hover:text-indigo-800"
                                   >
                                     <FaFilePdf className="w-4 h-4" />
                                   </a>
                                 )}
-                                {book.picture_url && (
-                                  <a 
-                                    href={book.picture_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-amber-600 hover:text-amber-800"
-                                  >
-                                    <FaImage className="w-4 h-4" />
-                                  </a>
+                                {book.picture_base64 && (
+                                  <img 
+                                    src={`data:image/png;base64,${book.picture_base64}`} 
+                                    alt="Book cover" 
+                                    className="h-10 w-10 rounded object-cover"
+                                  />
                                 )}
                               </div>
                             </td>
                             <td className="px-5 py-4 text-sm text-gray-600">
                               <div className="flex items-center space-x-3">
+                                <button
+                                  onClick={() => handleToggleApproval(book._id)}
+                                  className={`p-1.5 rounded-lg ${
+                                    book.approval_status === 'yes'
+                                      ? 'text-red-600 hover:bg-red-50 hover:text-red-800'
+                                      : 'text-green-600 hover:bg-green-50 hover:text-green-800'
+                                  }`}
+                                >
+                                  {book.approval_status === 'yes' ? (
+                                    <FaTimesCircle className="w-4 h-4" />
+                                  ) : (
+                                    <FaCheckCircle className="w-4 h-4" />
+                                  )}
+                                </button>
                                 <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
                                   <FaEdit className="w-4 h-4" />
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleDeleteBook(book._id)}
                                   className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50"
                                 >
@@ -562,7 +625,7 @@ const AdminDashboard: React.FC = () => {
                       type="date"
                       className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />
-                    <select 
+                    <select
                       className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
                     >
                       <option>All Statuses</option>
@@ -599,11 +662,10 @@ const AdminDashboard: React.FC = () => {
                             <td className="px-5 py-4 text-sm text-gray-600">{order.date}</td>
                             <td className="px-5 py-4 text-sm text-gray-600">₹{order.total}</td>
                             <td className="px-5 py-4 text-sm text-gray-600">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                                order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
-                                'bg-amber-100 text-amber-800'
-                              }`}>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                  order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-amber-100 text-amber-800'
+                                }`}>
                                 {order.status}
                               </span>
                             </td>
@@ -647,12 +709,12 @@ const AdminDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200/50">
-                      {customers.map(customer => (
-                        <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{customer.name}</td>
-                          <td className="px-5 py-4 text-sm text-gray-600">{customer.email}</td>
-                          <td className="px-5 py-4 text-sm text-gray-600">{customer.orders}</td>
-                          <td className="px-5 py-4 text-sm text-gray-600">{customer.joined}</td>
+                      {orders.map(order => (
+                        <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{order.customer}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">customer@example.com</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{order.items}</td>
+                          <td className="px-5 py-4 text-sm text-gray-600">{order.date}</td>
                           <td className="px-5 py-4 text-sm text-gray-600">
                             <button className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50">
                               View Details
@@ -668,30 +730,60 @@ const AdminDashboard: React.FC = () => {
 
             {activeTab === 'Reviews' && (
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
-                <div className="px-6 py-5 border-b border-gray-200/50">
-                  <h2 className="text-lg font-semibold text-gray-900">Customer Reviews</h2>
+                <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Customer Feedback</h2>
+                  <div className="flex items-center space-x-3">
+                    <select
+                      className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    >
+                      <option value="">All Ratings</option>
+                      <option value="5">5 Stars</option>
+                      <option value="4">4 Stars</option>
+                      <option value="3">3 Stars</option>
+                      <option value="2">2 Stars</option>
+                      <option value="1">1 Star</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {reviews.map(review => (
-                    <div key={review.id} className="border border-gray-200/50 rounded-xl p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center">
-                          <span className="text-amber-500">
-                            {'★'.repeat(Math.floor(review.rating))}
-                          </span>
-                          <span className="text-gray-300">
-                            {'★'.repeat(5 - Math.floor(review.rating))}
-                          </span>
+                {feedbackLoading ? (
+                  <div className="p-6 text-center text-gray-500">Loading feedback...</div>
+                ) : feedbackError ? (
+                  <div className="p-6 text-red-600">{feedbackError}</div>
+                ) : (
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {feedbacks
+                      .filter(feedback =>
+                        searchQuery ? feedback.rating === parseInt(searchQuery) : true
+                      )
+                      .map(feedback => (
+                        <div key={feedback._id} className="border border-gray-200/50 rounded-xl p-5 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <span className="text-amber-500">
+                                {'★'.repeat(Math.min(5, Math.max(0, Math.floor(feedback.rating))))}
+                              </span>
+                              <span className="text-gray-300">
+                                {'★'.repeat(Math.max(0, 5 - Math.min(5, Math.floor(feedback.rating))))}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {new Date(feedback.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-800 mb-3 text-sm">"{feedback.comment}"</p>
+                          {feedback.user && (
+                            <p className="text-xs text-gray-500">
+                              {feedback.user.name} • {feedback.user.email}
+                            </p>
+                          )}
+                          <div className="mt-2 text-xs text-gray-400">
+                            User ID: {feedback.user_id}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-500">{review.date}</span>
-                      </div>
-                      <p className="text-gray-800 mb-3 text-sm">"{review.comment}"</p>
-                      <p className="text-xs text-gray-500">
-                        {review.author} • {review.book}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -928,7 +1020,7 @@ const AdminDashboard: React.FC = () => {
             <select
               className="w-full px-4 py-2.5 border border-gray-200/75 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none"
               value={selectedOrder.status}
-              onChange={(e) => setSelectedOrder({...selectedOrder, status: e.target.value})}
+              onChange={(e) => setSelectedOrder({ ...selectedOrder, status: e.target.value })}
             >
               <option value="Processing">Processing</option>
               <option value="Shipped">Shipped</option>
