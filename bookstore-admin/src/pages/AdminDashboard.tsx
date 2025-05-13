@@ -61,14 +61,6 @@ interface Order {
   date: string;
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  orders: number;
-  joined: string;
-}
-
 interface Feedback {
   _id: string;
   user_id: string;
