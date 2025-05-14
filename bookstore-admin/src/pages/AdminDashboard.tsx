@@ -62,17 +62,13 @@ interface Order {
 }
 
 interface Feedback {
-  _id: string;
-  user_id: string;
+  id: string;
+  participantname: string;
+  email: string;
   rating: number;
-  comment: string;
-  createdAt: string;
-  updatedAt: string;
-  user?: {
-    name: string;
-    email: string;
-  };
+  review: string;
 }
+
 
 interface Category {
   ID: string;
@@ -720,64 +716,57 @@ const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {activeTab === 'Reviews' && (
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
-                <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Customer Feedback</h2>
-                  <div className="flex items-center space-x-3">
-                    <select
-                      className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    >
-                      <option value="">All Ratings</option>
-                      <option value="5">5 Stars</option>
-                      <option value="4">4 Stars</option>
-                      <option value="3">3 Stars</option>
-                      <option value="2">2 Stars</option>
-                      <option value="1">1 Star</option>
-                    </select>
+{activeTab === 'Reviews' && (
+  <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+    <div className="px-6 py-5 border-b border-gray-200/50 flex items-center justify-between">
+      <h2 className="text-lg font-semibold text-gray-900">Customer Feedback</h2>
+      <div className="flex items-center space-x-3">
+        <select
+          className="bg-gray-50/80 border border-gray-200/50 text-gray-900 text-sm rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+          onChange={(e) => setSearchQuery(e.target.value)}
+        >
+          <option value="">All Ratings</option>
+          {[5, 4, 3, 2, 1].map(num => (
+            <option key={num} value={num}>{num} Stars</option>
+          ))}
+        </select>
+      </div>
+    </div>
+    {feedbackLoading ? (
+      <div className="p-6 text-center text-gray-500">Loading feedback...</div>
+    ) : feedbackError ? (
+      <div className="p-6 text-red-600">{feedbackError}</div>
+    ) : (
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {feedbacks
+          .filter(feedback =>
+            searchQuery ? Math.floor(feedback.rating % 6) === parseInt(searchQuery) : true
+          )
+          .map(feedback => {
+            const ratingValue = Math.min(5, Math.max(0, Math.floor(feedback.rating % 6)));
+            return (
+              <div key={feedback.id} className="border border-gray-200/50 rounded-xl p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <span className="text-amber-500">
+                      {'★'.repeat(ratingValue)}
+                    </span>
+                    <span className="text-gray-300">
+                      {'★'.repeat(5 - ratingValue)}
+                    </span>
                   </div>
                 </div>
-                {feedbackLoading ? (
-                  <div className="p-6 text-center text-gray-500">Loading feedback...</div>
-                ) : feedbackError ? (
-                  <div className="p-6 text-red-600">{feedbackError}</div>
-                ) : (
-                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {feedbacks
-                      .filter(feedback =>
-                        searchQuery ? feedback.rating === parseInt(searchQuery) : true
-                      )
-                      .map(feedback => (
-                        <div key={feedback._id} className="border border-gray-200/50 rounded-xl p-5 hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center">
-                              <span className="text-amber-500">
-                                {'★'.repeat(Math.min(5, Math.max(0, Math.floor(feedback.rating))))}
-                              </span>
-                              <span className="text-gray-300">
-                                {'★'.repeat(Math.max(0, 5 - Math.min(5, Math.floor(feedback.rating))))}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-500">
-                              {new Date(feedback.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="text-gray-800 mb-3 text-sm">"{feedback.comment}"</p>
-                          {feedback.user && (
-                            <p className="text-xs text-gray-500">
-                              {feedback.user.name} • {feedback.user.email}
-                            </p>
-                          )}
-                          <div className="mt-2 text-xs text-gray-400">
-                            User ID: {feedback.user_id}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
+                <p className="text-gray-800 mb-3 text-sm">"{feedback.review}"</p>
+                <p className="text-xs text-gray-500">
+                  {feedback.participantname} • {feedback.email}
+                </p>
               </div>
-            )}
+            );
+          })}
+      </div>
+    )}
+  </div>
+)}
 
             {activeTab === 'Settings' && (
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6">
