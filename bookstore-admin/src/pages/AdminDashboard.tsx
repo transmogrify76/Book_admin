@@ -410,7 +410,7 @@ const AdminDashboard: React.FC = () => {
     if (bookImage) formData.append('book_picture', bookImage);
 
     try {
-      const response = await fetch('http://localhost:5400/api/booksops/uploadbooksdata', {
+      const response = await fetch('http://localhost:5400/api/adminroutes/uploadbooksdata', {
         method: 'POST',
         body: formData,
         headers: {
